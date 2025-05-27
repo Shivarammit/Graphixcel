@@ -1,0 +1,176 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRAPHIXCEL - Excel to Graph Converter</title>
+    <link rel="stylesheet" href="{% static 'styles/index.css' %}">
+</head>
+<body>
+    <!-- Taskbar (Navigation) -->
+    <nav class="navbar">
+        <div class="navbar-brand">GRAPHIXCEL</div>
+        <div class="navbar-profile">
+            <button class="btn-login" hidden>Login</button>
+        </div>
+    </nav>
+
+    <!-- Main Layout: Sidebar and Content -->
+    <div class="main-container">
+        <!-- Main Content Area -->
+        <section class="content">
+            <h1>Welcome to GRAPHIXCEL</h1>
+            <p>Convert your Excel files into beautiful graphs with a few clicks.</p>
+            <div class="action-cards">
+                <div class="card">
+                    {% if file is None %}
+                        <h2>Upload Excel File</h2>
+                        <form method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <input type="file" name="file">
+                            <button type="submit" class="btn-upload">Upload</button>
+                        </form>
+                    {% else %}
+                        <h2>File uploaded</h2>
+                    {% endif %}
+                </div>
+                <div class="card">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <h2>Select Graph Type</h2>
+                        <select name="graph" id="graph-type" onchange="check()">
+                            <option value="" selected disabled hidden>Choose here</option>
+                            <option value="bar">Bar Graph</option>
+                            <option value="line">Line Graph</option>
+                            <option value="pie">Pie Chart</option>
+                        </select>
+                        {% if columns is not None %}
+                            <div id="axis" hidden onchange="checkButton()">
+                                <h4>Enter X axis</h4>
+                                <br>
+                                {% for i in columns %}
+                                    <input type="radio" name="xaxis" value="{{i}}">{{i}}</input>
+                                {%endfor%}
+                                <br><br>
+                                <h4>Enter Y axis</h4>
+                                <br>
+                                {% for i in columns %}
+                                    <input type="radio" name="yaxis" value="{{i}}">{{i}}</input>
+                                {%endfor%}
+                            </div>
+                            <div id="column" hidden onchange="checkButton()">
+                                <br>
+                                <h4>Enter column</h4>
+                                <br>
+                                {% for i in columns %}
+                                    <input type="radio" name="column" value="{{i}}">{{i}}</input>
+                                {%endfor%}
+                            </div>
+                        {%endif%}
+
+                        <button disabled id="genGraphButton" type="submit" class="btn-generate">Generate Graph</button>
+                    </form>
+                </div>
+
+            </div>
+
+            <!-- Graph Result -->
+            <div id="graph-container">
+                {% if output == 'true' %}
+                    <img src="media/output.png">
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <!-- External JavaScript -->
+    <script>
+        // Handle Browse File Button
+        document.getElementById('browse-file').addEventListener('click', function() {
+            document.getElementById('file-upload').click();
+        });
+
+        function checkButton(){
+            if (document.getElementById("axis").hidden==false){
+                let xaxis=document.getElementsByName("xaxis")
+                let yaxis=document.getElementsByName("yaxis")
+                var count=0
+                for (var i=0;i<xaxis.length;i++){
+                    if (xaxis[i].checked){
+                        count+=1
+                    }
+                    if (yaxis[i].checked){
+                        count+=1
+                    }
+                }
+                if (count==2){
+                    document.getElementById("genGraphButton").disabled=false
+                    count=0
+                }
+            }else{
+                let column=document.getElementsByName('column')
+                for (var i=0;i<column.length;i++){
+                    if (column[i].checked){
+                        document.getElementById("genGraphButton").disabled=false
+                    }
+                }
+            }
+        }
+
+        function check(){
+            let x=document.getElementById("graph-type")
+            if (x.value=="pie"){
+                document.getElementById("column").hidden=false
+                document.getElementById("axis").hidden=true
+            }else{
+                document.getElementById("column").hidden=true
+                document.getElementById("axis").hidden=false
+            }
+        }
+
+        // Handle File Selection
+        document.getElementById('file-upload').addEventListener('change', handleFiles);
+
+        // Drag & Drop Functionality
+        let dropArea = document.getElementById('drop-area');
+
+        // Prevent default behaviors for drag/drop events
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // Highlight drop area when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'), false);
+        });
+
+        // Handle dropped files
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            let dt = e.dataTransfer;
+            let files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            const fileInput = document.getElementById('file-upload');
+            if (files.length > 0) {
+                fileInput.files = files;
+            }
+            // You can process the file further here
+            console.log('File uploaded:', files[0]);
+        }
+    </script>
+</body>
+</html>
